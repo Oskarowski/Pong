@@ -1,5 +1,3 @@
-
-
 console.log("main.js loaded");
 
 const canvas = document.getElementById("gameCanvas");
@@ -30,6 +28,62 @@ const BALL_START_Y = CANVAS_HEIGHT / 2;
 const BALL_SPEED_VX = 4.5;
 const BALL_SPEED_VY = 1.5;
 
+const ball = {
+    r: BALL_R,
+    x: BALL_START_X,
+    y: BALL_START_Y,
+    vx: BALL_SPEED_VX,
+    vy: BALL_SPEED_VY,
+
+    move: function() {
+        this.x += this.vx;
+        this.y += this.vy;
+    },
+    moveToCentre: function() {
+        this.x = BALL_START_X;
+        this.y = BALL_START_Y;
+    },
+    outOnLeft: function() {
+        if(this.x + BALL_R <= 0) {
+            p2Points++;
+            return true; 
+        }
+        return false;
+    },
+    outOnRight: function() {
+        if(this.x - BALL_R >= CANVAS_WIDTH) {
+            p1Points++;
+            return true;
+        }
+        return false;
+    },
+    bounceFromWall: function() {
+        this.vy = -this.vy;
+    },
+    bounceFromPaddle: function() {
+        this.vx = -this.vx;
+    },
+    shouldBounceFromTopWall: function() {
+        return this.y - BALL_R <= 0 && this.vy < 0;
+    },
+    shouldBounceFromBottomWall: function() {
+        return this.y + BALL_R >= CANVAS_HEIGHT && this.vy > 0;
+    },
+    isOnTheSameHeightAsPaddle: function(paddleY) {
+        return isInPaddleRange(this.y, paddleY, paddleY + PADDLE_HEIGHT)
+    },
+    shouldBounceFromLeftPaddle: function() {
+        return this.vx < 0 && 
+        isInPaddleRange(this.x - BALL_R, PADDLE_P1_X, PADDLE_P1_X + PADDLE_WIDTH) &&
+        ball.isOnTheSameHeightAsPaddle(p1PaddleY);
+    },
+    shouldBounceFromRightPaddle: function() {
+        return this.vx > 0 && 
+        isInPaddleRange(this.x + BALL_R, PADDLE_P2_X, PADDLE_P2_X + PADDLE_WIDTH) &&
+        ball.isOnTheSameHeightAsPaddle(p2PaddleY);
+    },
+}
+
 const P1_UP_BUTTON = "KeyW";
 const P1_DOWN_BUTTON = "KeyS";
 const P2_UP_BUTTON = "ArrowUp";
@@ -41,10 +95,6 @@ const STOP_ACTION = "stop";
 
 const PAUSE_BUTTON = "KeyP";
 
-let ballX = BALL_START_X;
-let ballY = BALL_START_Y;
-let ballVX = BALL_SPEED_VX;
-let ballVY = BALL_SPEED_VY;
 let p1PaddleY  = PADDLE_START_Y;
 let p2PaddleY = PADDLE_START_Y;
 let p1Points = 0;
@@ -59,7 +109,7 @@ function drawState() {
     clearCanvas();
     drawPoints(p1Points.toString(), BOARD_P1, BOARD_Y);
     drawPoints(p2Points.toString(), BOARD_P2, BOARD_Y);
-    drawBall(ballX, ballY, BALL_R);
+    drawBall(ball.x, ball.y, ball.r);
     drawPaddle(PADDLE_P1_X, p1PaddleY);
     drawPaddle(PADDLE_P2_X, p2PaddleY);
 }
@@ -77,6 +127,7 @@ function drawBall(x,y,r) {
     ctx.closePath();
     ctx.fill();
 }
+
 function clearCanvas() {
     ctx.clearRect(0,0,canvas.width, canvas.height);
 }
@@ -94,14 +145,13 @@ function updateState() {
 }
 
 function moveBall() {
-    if(shouldBallBounceFromTopWall() || shouldBallBounceFromBottomWall()) bounceBallFromWall();
-    if(shouldBallBounceFromLeftPaddle() || shouldBallBounceFromRightPaddle()) bounceBallFromPaddle();
-    if(ballOutOnLeft() || ballOutOnRight()) moveBallToCentre();
-    moveBallPosition();
+    if(ball.shouldBounceFromTopWall() || ball.shouldBounceFromBottomWall()) ball.bounceFromWall();
+    if(ball.shouldBounceFromLeftPaddle() || ball.shouldBounceFromRightPaddle()) ball.bounceFromPaddle();
+    if(ball.outOnLeft() || ball.outOnRight()) ball.moveToCentre();
+    ball.move();
 }
 
 setInterval(updateAndChangeState, STATE_CHANGE_INTERVAL);
-
 
 window.addEventListener("keydown", event => {
     const code = event.code;
@@ -147,58 +197,9 @@ function movePaddles(){
     }
 }
 
-function moveBallPosition(){
-    ballX+=ballVX;
-    ballY+=ballVY;
+function isInPaddleRange(yPos, min, max){
+    return yPos >= min && yPos <= max;
 }
-function moveBallToCentre(){
-    ballX = BALL_START_X;
-    ballY = BALL_START_Y;
-}
-function ballOutOnLeft(){
-    if(ballX+BALL_R <= 0) {
-        p2Points++;
-        return true; 
-    }
-    return false;
-}
-function ballOutOnRight(){
-    if(ballX - BALL_R >= CANVAS_WIDTH) {
-        p1Points++;
-        return true;
-    }
-    return false;
-}
-function bounceBallFromWall() {
-    ballVY = -ballVY;
-}
-function bounceBallFromPaddle() {
-    ballVX = -ballVX;
-}
-function shouldBallBounceFromTopWall() {
-    return ballY - BALL_R <= 0 && ballVY < 0;
-}
-function shouldBallBounceFromBottomWall() {
-    return ballY + BALL_R >= CANVAS_HEIGHT && ballVY > 0;
-}
-function isInPaddleRange(ballYPos, min, max){
-    return ballYPos >= min && ballYPos <= max;
-}
-function isBallOnTheSameHeightAsPaddle(paddleY) {
-    return isInPaddleRange(ballY, paddleY, paddleY+PADDLE_HEIGHT)
-}
-function shouldBallBounceFromLeftPaddle() {
-    return ballVX < 0 && 
-    isInPaddleRange(ballX-BALL_R, PADDLE_P1_X, PADDLE_P1_X+PADDLE_WIDTH) &&
-    isBallOnTheSameHeightAsPaddle(p1PaddleY);
-}
-function shouldBallBounceFromRightPaddle() {
-    return ballVX > 0 && 
-    isInPaddleRange(ballX+BALL_R, PADDLE_P2_X, PADDLE_P2_X+PADDLE_WIDTH) &&
-    isBallOnTheSameHeightAsPaddle(p2PaddleY);
-}
-
-
 
 clearButton.addEventListener("click", (event) => {
     console.log("Clear button clicked");
