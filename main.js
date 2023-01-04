@@ -3,6 +3,8 @@ console.log("main.js loaded");
 const canvas = document.getElementById("gameCanvas");
 const pauseButton = document.getElementById("pauseButton");
 const resetGameBtn = document.getElementById("resetGame");
+const scoreBtn = document.getElementById("scoreBtn");
+const loadBtn = document.getElementById("loadBtn");
 
 const ctx = canvas.getContext("2d");
 ctx.font = "30px Arial";
@@ -198,11 +200,9 @@ class Player {
     }
 }
 
-
 const ball = new Ball();
 const p1 = new Player(PADDLE_P1_X, BOARD_P1);
 const p2 = new Player(PADDLE_P2_X, BOARD_P2);
-
 
 let isPaused = false;
 
@@ -301,3 +301,26 @@ function resetGame(){
 resetGameBtn.addEventListener("click",  (event) => {
     resetGame()
 });
+
+
+function savePlayerScore(){
+    playerScores = {score: [p1.points, p2.points]};
+    localStorage.setItem("PlayersScores", JSON.stringify(playerScores));
+}
+function loadPlayerScore(){
+    playerScores = {score: [p1.points, p2.points]};
+    let savedScoreWeb = localStorage.getItem("PlayersScores");
+    if(typeof savedScoreWeb!=="string") return;
+    let savedScoreParsed = JSON.parse(savedScoreWeb);
+    p1.points = savedScoreParsed.score[0];
+    p2.points = savedScoreParsed.score[1];
+    
+}
+
+scoreBtn.addEventListener("click", (event) => {
+    savePlayerScore();
+});
+loadBtn.addEventListener("click", (event) => {
+    loadPlayerScore();
+});
+
