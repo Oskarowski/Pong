@@ -2,6 +2,7 @@ console.log("main.js loaded");
 
 const canvas = document.getElementById("gameCanvas");
 const pauseButton = document.getElementById("pauseButton");
+const resetGameBtn = document.getElementById("resetGame");
 
 const ctx = canvas.getContext("2d");
 ctx.font = "30px Arial";
@@ -27,6 +28,7 @@ const BALL_START_X = CANVAS_WIDTH / 2;
 const BALL_START_Y = CANVAS_HEIGHT / 2;
 const BALL_SPEED_VX = 4.5;
 const BALL_SPEED_VY = 1.5;
+const SPEED_MODIFIER = 1.1;
 
 const P1_UP_BUTTON = "KeyW";
 const P1_DOWN_BUTTON = "KeyS";
@@ -37,7 +39,9 @@ const UP_ACTION = "up";
 const DOWN_ACTION = "down";
 const STOP_ACTION = "stop";
 
+
 const PAUSE_BUTTON = "KeyP";
+const RESET_BUTTON = "KeyR";
 
 setInterval(updateAndChangeState, STATE_CHANGE_INTERVAL);
 
@@ -46,8 +50,10 @@ class Ball {
         this.r = BALL_R;
         this.x = BALL_START_X;
         this.y = BALL_START_Y;
-        this.vx = BALL_SPEED_VX;
-        this.vy = BALL_SPEED_VY;
+        this.randomizeInicialSpeedVector();
+        // this.vx = BALL_SPEED_VX;
+        // this.vy = BALL_SPEED_VY;
+        this.speedModifier = SPEED_MODIFIER;
     }
 
     move() {
@@ -57,10 +63,20 @@ class Ball {
     moveToCentre() {
         this.x = BALL_START_X;
         this.y = BALL_START_Y;
+        this.randomizeInicialSpeedVector();
+    }
+    increseSpeed(){
+        this.vx *= 1.1;
+        this.vy *= 1.1;
+    }
+    resetSpeed(){
+        this.vx = BALL_SPEED_VX;
+        this.vy = BALL_SPEED_VY;
     }
     outOnLeft() {
         if(this.x + BALL_R <= 0) {
             p2.points++;
+            this.resetSpeed();
             return true; 
         }
         return false;
@@ -68,6 +84,7 @@ class Ball {
     outOnRight() {
         if(this.x - BALL_R >= CANVAS_WIDTH) {
             p1.points++;
+            this.resetSpeed();
             return true;
         }
         return false;
@@ -77,6 +94,7 @@ class Ball {
     }
     bounceFromPaddle() {
         this.vx = -this.vx;
+        this.increseSpeed();
     }
     shouldBounceFromTopWall() {
         return this.y - BALL_R <= 0 && this.vy < 0;
@@ -103,6 +121,38 @@ class Ball {
         ctx.closePath();
         ctx.fill();
     }
+    
+
+    getValueFromRange(max, min){
+        return Math.random() * (max - min) + min;
+    }
+    randomizeInicialSpeedVector(){
+        const randomToDirection = [Math.random(), Math.random()];
+
+        let randomVX;
+        if(randomToDirection[0] >= 0.5){
+            const max = 5, min = 4;
+            randomVX = this.getValueFromRange(max, min);
+        }
+        else if(randomToDirection[0] < 0.5){
+            const max = -5, min = -4;
+            randomVX = this.getValueFromRange(max, min);
+        }
+
+        let randomVY;
+        if(randomToDirection[1] >= 0.5){
+            const max = 2.5, min = 1.25
+            randomVY = this.getValueFromRange(max, min);
+        }
+        else if(randomToDirection[1] < 0.5){
+            const max = -2.5, min = -1.25;
+            randomVY = this.getValueFromRange(max, min);
+        }
+
+        this.vx = randomVX;
+        this.vy = randomVY;
+
+    }
 }
 
 class Paddle {
@@ -123,6 +173,8 @@ class Paddle {
         this.setY(this.y - PADDLE_STEP);
     }
     drawYourself(){
+        ctx.fillStyle = "#158f28";
+        ctx.strokeStyle = "#FF0000";
         ctx.fillRect(this.x, this.y, PADDLE_WIDTH, PADDLE_HEIGHT);
     }
 }
@@ -150,6 +202,7 @@ class Player {
 const ball = new Ball();
 const p1 = new Player(PADDLE_P1_X, BOARD_P1);
 const p2 = new Player(PADDLE_P2_X, BOARD_P2);
+
 
 let isPaused = false;
 
@@ -194,7 +247,7 @@ function updateAndChangeState() {
 
 window.addEventListener("keydown", event => {
     const code = event.code;
-    console.log("keydown " + code);
+    // console.log("keydown " + code);
     if(code === P1_UP_BUTTON){
         p1.action = UP_ACTION;
     }
@@ -212,7 +265,6 @@ window.addEventListener("keydown", event => {
 
 window.addEventListener("keyup", event => {
     const code = event.code;
-    console.log("keyup " + code);
     if(code === P1_UP_BUTTON && p1.action === UP_ACTION || code === P1_DOWN_BUTTON && p1.action === DOWN_ACTION) { p1.action = STOP_ACTION; }
     if(code === P2_UP_BUTTON && p2.action === UP_ACTION || code === P2_DOWN_BUTTON && p2.action === DOWN_ACTION) { p2.action = STOP_ACTION; }
 });
@@ -220,16 +272,10 @@ window.addEventListener("keyup", event => {
 window.addEventListener("keydown", event => {
     const code = event.code;
     if(code === PAUSE_BUTTON){ isPaused = !isPaused; }
-});
-
-
-pauseButton.addEventListener("click", (event) => {
-    console.log("PAUSE button clicked");
-    isPaused = !isPaused;
+    if(code === RESET_BUTTON) { resetGame(); }
 });
 
 function inRange(value, min, max){
-    console.log("inRange(value, min, max)");
     if (value <= min) { return min; }
     else if (value >= max) {return max; }
     return value;
@@ -238,3 +284,20 @@ function inRange(value, min, max){
 function isInPaddleRange(yPos, min, max){
     return yPos >= min && yPos <= max;
 }
+
+pauseButton.addEventListener("click", (event) => {
+    console.log("PAUSE button clicked");
+    isPaused = !isPaused;
+});
+
+function resetGame(){
+    console.log("RESET points btn clicked");
+    p1.points = 0;
+    p2.points = 0;
+    p1.paddle.y=PADDLE_START_Y;
+    p2.paddle.y=PADDLE_START_Y;
+}
+
+resetGameBtn.addEventListener("click",  (event) => {
+    resetGame()
+});
