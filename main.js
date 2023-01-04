@@ -7,6 +7,7 @@ const scoreBtn = document.getElementById("scoreBtn");
 const loadBtn = document.getElementById("loadBtn");
 
 const ctx = canvas.getContext("2d");
+ctx.fillStyle = "#158f28";
 ctx.font = "30px Arial";
 
 const STATE_CHANGE_INTERVAL = 7;
@@ -20,7 +21,7 @@ const BOARD_P2 = 500;
 
 const PADDLE_WIDTH = 20;
 const PADDLE_HEIGHT = 100;
-const PADDLE_STEP = 3;
+const PADDLE_STEP = 4;
 const PADDLE_P1_X = 10;
 const PADDLE_P2_X = 770;
 const PADDLE_START_Y = (CANVAS_HEIGHT-PADDLE_HEIGHT) / 2;
@@ -41,9 +42,10 @@ const UP_ACTION = "up";
 const DOWN_ACTION = "down";
 const STOP_ACTION = "stop";
 
-
 const PAUSE_BUTTON = "KeyP";
 const RESET_BUTTON = "KeyR";
+const SAVE_SCORE_BUTTON = "KeyZ";
+const LOAD_SCORE_BUTTON = "KeyL";
 
 setInterval(updateAndChangeState, STATE_CHANGE_INTERVAL);
 
@@ -123,8 +125,6 @@ class Ball {
         ctx.closePath();
         ctx.fill();
     }
-    
-
     getValueFromRange(max, min){
         return Math.random() * (max - min) + min;
     }
@@ -175,8 +175,6 @@ class Paddle {
         this.setY(this.y - PADDLE_STEP);
     }
     drawYourself(){
-        ctx.fillStyle = "#158f28";
-        ctx.strokeStyle = "#FF0000";
         ctx.fillRect(this.x, this.y, PADDLE_WIDTH, PADDLE_HEIGHT);
     }
 }
@@ -273,6 +271,8 @@ window.addEventListener("keydown", event => {
     const code = event.code;
     if(code === PAUSE_BUTTON){ isPaused = !isPaused; }
     if(code === RESET_BUTTON) { resetGame(); }
+    if(code === SAVE_SCORE_BUTTON) { savePlayerScore(); }
+    if(code === LOAD_SCORE_BUTTON) {loadPlayerScore(); }
 });
 
 function inRange(value, min, max){
@@ -291,11 +291,12 @@ pauseButton.addEventListener("click", (event) => {
 });
 
 function resetGame(){
-    console.log("RESET points btn clicked");
+    console.log("RESET game btn clicked");
     p1.points = 0;
     p2.points = 0;
     p1.paddle.y=PADDLE_START_Y;
     p2.paddle.y=PADDLE_START_Y;
+    ball.moveToCentre();
 }
 
 resetGameBtn.addEventListener("click",  (event) => {
@@ -314,7 +315,6 @@ function loadPlayerScore(){
     let savedScoreParsed = JSON.parse(savedScoreWeb);
     p1.points = savedScoreParsed.score[0];
     p2.points = savedScoreParsed.score[1];
-    
 }
 
 scoreBtn.addEventListener("click", (event) => {
